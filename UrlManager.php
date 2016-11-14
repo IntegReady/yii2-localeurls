@@ -53,7 +53,7 @@ class UrlManager extends BaseUrlManager
     public $enableLanguageDetection = true;
 
     /**
-     * @var bool whether to store the detected language in session and (optionally) a cookie. If this
+     * @var bool whether to store the detected language in session. If this
      * is `true` (default) and a returning user tries to access any URL without a language prefix,
      * he'll be redirected to the respective stored language URL (e.g. /some/page -> /fr/some/page).
      */
@@ -71,7 +71,7 @@ class UrlManager extends BaseUrlManager
 
     /**
      * @var int number of seconds how long the language information should be stored in cookie,
-     * if `$enableLanguagePersistence` is true. Set to `false` to disable the language cookie completely.
+     * this option is undepended from `$enableLanguagePersistence` parameter. Set to `false` to disable the language cookie completely.
      * Default is 30 days.
      */
     public $languageCookieDuration = 2592000;
@@ -225,7 +225,7 @@ class UrlManager extends BaseUrlManager
 
     public function createAbsoluteUrl($params, $scheme = null)
     {
-        if (Yii::$app->language != Yii::$app->sourceLanguage) {
+        if ((Yii::$app->language != Yii::$app->sourceLanguage)) {
             $params += ['language' => Yii::$app->language];
         }
         return parent::createAbsoluteUrl($params, $scheme);
@@ -281,18 +281,19 @@ class UrlManager extends BaseUrlManager
             if ($this->enableLanguagePersistence) {
                 Yii::$app->session[$this->languageSessionKey] = $language;
                 Yii::trace("Persisting language '$language' in session.", __METHOD__);
-                if ($this->languageCookieDuration) {
-                    $cookie = new Cookie([
-                        'name' => $this->languageCookieName,
-                        'httpOnly' => true,
-                        'domain' => is_null($this->languageCookieDomain) ? Yii::$app->request->serverName : $this->languageCookieDomain,
-                    ]);
-                    $cookie->value = $language;
-                    $cookie->expire = time() + (int) $this->languageCookieDuration;
-                    Yii::$app->getResponse()->getCookies()->add($cookie);
-                    Yii::trace("Persisting language '$language' in cookie.", __METHOD__);
-                }
             }
+            if ($this->languageCookieDuration) {
+                $cookie = new Cookie([
+                    'name'     => $this->languageCookieName,
+                    'httpOnly' => true,
+                    'domain'   => is_null($this->languageCookieDomain) ? Yii::$app->request->serverName : $this->languageCookieDomain,
+                ]);
+                $cookie->value = $language;
+                $cookie->expire = time() + (int)$this->languageCookieDuration;
+                Yii::$app->getResponse()->getCookies()->add($cookie);
+                Yii::trace("Persisting language '$language' in cookie.", __METHOD__);
+            }
+
 
             // "Reset" case: We called e.g. /fr/demo/page so the persisted language was set back to "fr".
             // Now we can redirect to the URL without language prefix, if default prefixes are disabled.
@@ -304,10 +305,10 @@ class UrlManager extends BaseUrlManager
             if ($this->enableLanguagePersistence) {
                 $language = Yii::$app->session->get($this->languageSessionKey);
                 $language!==null && Yii::trace("Found persisted language '$language' in session.", __METHOD__);
-                if ($language===null) {
-                    $language = $request->getCookies()->getValue($this->languageCookieName);
-                    $language!==null && Yii::trace("Found persisted language '$language' in cookie.", __METHOD__);
-                }
+            }
+            if ($this->languageCookieDuration && $language===null) {
+                $language = $request->getCookies()->getValue($this->languageCookieName);
+                $language!==null && Yii::trace("Found persisted language '$language' in cookie.", __METHOD__);
             }
             if ($language===null && $this->enableLanguageDetection) {
                 foreach ($request->getAcceptableLanguages() as $acceptable) {
