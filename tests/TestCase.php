@@ -1,6 +1,7 @@
 <?php
-use yii\helpers\ArrayHelper;
+
 use yii\di\Container;
+use yii\helpers\ArrayHelper;
 
 abstract class TestCase extends \PHPUnit_Framework_TestCase
 {
@@ -20,15 +21,51 @@ abstract class TestCase extends \PHPUnit_Framework_TestCase
     protected $baseUrl = '';
 
     /**
+     * Mock a web application with given config for urlManager component and let it resolve the request
+     *
+     * @param array $config for urlManager component
+     */
+    public function mockComponent($config = [])
+    {
+        $this->mockWebApplication([
+            'components' => [
+                'urlManager' => $config,
+            ],
+        ]);
+        Yii::$app->request->resolve();
+    }
+
+    protected function mockWebApplication($config = [], $appClass = '\yii\web\Application')
+    {
+        new $appClass(ArrayHelper::merge([
+            'id'         => 'testapp',
+            'language'   => 'en',
+            'basePath'   => __DIR__,
+            'vendorPath' => __DIR__ . '/../vendor/',
+            'components' => [
+                'request'    => ArrayHelper::merge([
+                    'enableCookieValidation' => false,
+                    'isConsoleRequest'       => false,
+                    'hostInfo'               => 'http://localhost',
+                ], $this->request),
+                'urlManager' => [
+                    'class'          => 'meshzp\localeurls\UrlManager',
+                    'showScriptName' => $this->showScriptName,
+                ],
+            ],
+        ], $config));
+    }
+
+    /**
      * Destroy Yii app singleton, DI container, session and cookies
      */
     protected function tearDown()
     {
         $_COOKIE = [];
         \Yii::$app->session->destroy();
-        \Yii::$app = null;
+        \Yii::$app       = null;
         \Yii::$container = new Container();
-        $this->request = [];
+        $this->request   = [];
         parent::tearDown();
     }
 
@@ -40,12 +77,12 @@ abstract class TestCase extends \PHPUnit_Framework_TestCase
      */
     protected function mockRequest($url, $config = [])
     {
-        $url = $this->prepareUrl($url);
-        $_SERVER['REQUEST_URI'] = $url;
-        $_SERVER['SCRIPT_NAME'] = $this->baseUrl.'/index.php';
-        $_SERVER['SCRIPT_FILENAME'] = __DIR__ . $this->baseUrl.'/index.php';
-        $_SERVER['DOCUMENT_ROOT'] = __DIR__;
-        $parts = explode('?', $url);
+        $url                        = $this->prepareUrl($url);
+        $_SERVER['REQUEST_URI']     = $url;
+        $_SERVER['SCRIPT_NAME']     = $this->baseUrl . '/index.php';
+        $_SERVER['SCRIPT_FILENAME'] = __DIR__ . $this->baseUrl . '/index.php';
+        $_SERVER['DOCUMENT_ROOT']   = __DIR__;
+        $parts                      = explode('?', $url);
         if (isset($parts[1])) {
             $_SERVER['QUERY_STRING'] = $parts[1];
         }
@@ -53,17 +90,17 @@ abstract class TestCase extends \PHPUnit_Framework_TestCase
     }
 
     /**
-     * Mock a web application with given config for urlManager component and let it resolve the request
+     * @param string $url
      *
-     * @param array $config for urlManager component
+     * @return string the URL with scriptName and baseUrl applied if enabled
      */
-    public function mockComponent($config = []) {
-        $this->mockWebApplication([
-            'components' => [
-                'urlManager' => $config,
-            ]
-        ]);
-        Yii::$app->request->resolve();
+    protected function prepareUrl($url)
+    {
+        if ($this->showScriptName) {
+            $url = '/index.php' . $url;
+        }
+
+        return $this->baseUrl . $url;
     }
 
     /**
@@ -75,38 +112,5 @@ abstract class TestCase extends \PHPUnit_Framework_TestCase
     {
         $url = $this->prepareUrl($url);
         $this->setExpectedExceptionRegExp('\yii\base\Exception', '#^' . $url . '$#');
-    }
-
-    /**
-     * @param string $url
-     * @return string the URL with scriptName and baseUrl applied if enabled
-     */
-    protected function prepareUrl($url)
-    {
-        if ($this->showScriptName) {
-            $url = '/index.php' . $url;
-        }
-        return $this->baseUrl . $url;
-    }
-
-    protected function mockWebApplication($config = [], $appClass = '\yii\web\Application')
-    {
-        new $appClass(ArrayHelper::merge([
-            'id' => 'testapp',
-            'language' => 'en',
-            'basePath' => __DIR__,
-            'vendorPath' => __DIR__.'/../vendor/',
-            'components' => [
-                'request' => ArrayHelper::merge([
-                    'enableCookieValidation' => false,
-                    'isConsoleRequest' => false,
-                    'hostInfo' => 'http://localhost',
-                ], $this->request),
-                'urlManager' => [
-                    'class' => 'meshzp\localeurls\UrlManager',
-                    'showScriptName' => $this->showScriptName,
-                ],
-            ],
-        ], $config));
     }
 }

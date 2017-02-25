@@ -1,22 +1,29 @@
 {
-    "name": "meshzp/yii2-localeurls",
-    "description": "Automatic locale/language management for URLs.",
-    "keywords": ["yii2", "i18n", "locale"],
-    "type": "yii2-extension",
-    "license": "MIT",
-    "authors": [
-        {
-            "name": "Michael Härtl",
-            "email": "haertl.mike@gmail.com"
-        }
-    ],
-    "require": {
-        "yiisoft/yii2": "*",
-        "yiisoft/yii2-bootstrap": "*"
-    },
-    "autoload": {
-        "psr-4": {
-            "meshzp\\localeurls\\": ""
-        }
+  "name": "integready/yii2-localeurls",
+  "description": "Automatic locale/language management for URLs.",
+  "keywords": [
+    "yii2",
+    "i18n",
+    "locale"
+  ],
+  "homepage": "https://github.com/IntegReady/yii2-localeurls",
+  "type": "yii2-extension",
+  "license": "MIT",
+  "authors": [
+    {
+      "name": "IntegReady"
     }
+  ],
+  "require": {
+    "yiisoft/yii2": "*",
+    "yiisoft/yii2-bootstrap": "*"
+  },
+  "require-dev": {
+    "yiisoft/yii2-coding-standards": "*"
+  },
+  "autoload": {
+    "psr-4": {
+      "integready\\localeurls\\": ""
+    }
+  }
 }

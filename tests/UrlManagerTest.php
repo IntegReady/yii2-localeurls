@@ -7,7 +7,7 @@ class UrlManagerTest extends TestCase
     public function testSetsDefaultLanguageIfNoLanguageSpecified()
     {
         $this->mockRequest('/');
-        $this->mockComponent( [
+        $this->mockComponent([
             'languages' => ['en-US', 'en', 'de'],
         ]);
         $this->assertEquals('en', Yii::$app->language);
@@ -98,7 +98,7 @@ class UrlManagerTest extends TestCase
         $this->expectRedirect('/en/site/page');
         $this->mockRequest('/site/page');
         $this->mockComponent([
-            'languages' => ['en-US', 'en', 'de'],
+            'languages'                    => ['en-US', 'en', 'de'],
             'enableDefaultLanguageUrlCode' => true,
         ]);
     }
@@ -133,7 +133,7 @@ class UrlManagerTest extends TestCase
     public function testRedirectsIfNoLanguageInUrlAndAcceptedLanguageMatches()
     {
         $this->expectRedirect('/de/site/page');
-        $this->mockRequest('/site/page',[
+        $this->mockRequest('/site/page', [
             'acceptableLanguages' => ['de'],
         ]);
         $this->mockComponent([
@@ -144,7 +144,7 @@ class UrlManagerTest extends TestCase
     public function testRedirectsIfNoLanguageInUrlAndAcceptedLanguageMatchesWildcard()
     {
         $this->expectRedirect('/de/site/page');
-        $this->mockRequest('/site/page',[
+        $this->mockRequest('/site/page', [
             'acceptableLanguages' => ['de'],
         ]);
         $this->mockComponent([
@@ -155,7 +155,7 @@ class UrlManagerTest extends TestCase
     public function testRedirectsIfNoLanguageInUrlAndAcceptedLanguageWithCountryMatches()
     {
         $this->expectRedirect('/de-at/site/page');
-        $this->mockRequest('/site/page',[
+        $this->mockRequest('/site/page', [
             'acceptableLanguages' => ['de-AT', 'de', 'en'],
         ]);
         $this->mockComponent([
@@ -166,7 +166,7 @@ class UrlManagerTest extends TestCase
     public function testRedirectsIfNoLanguageInUrlAndAcceptedLanguageWithCountryMatchesWildcard()
     {
         $this->expectRedirect('/de-at/site/page');
-        $this->mockRequest('/site/page',[
+        $this->mockRequest('/site/page', [
             'acceptableLanguages' => ['de-AT', 'de', 'en'],
         ]);
         $this->mockComponent([
@@ -177,29 +177,29 @@ class UrlManagerTest extends TestCase
     public function testRedirectsIfNoLanguageInUrlAndAcceptedLanguageWithCountryMatchesCountryAlias()
     {
         $this->expectRedirect('/at/site/page');
-        $this->mockRequest('/site/page',[
+        $this->mockRequest('/site/page', [
             'acceptableLanguages' => ['de-at', 'de'],
         ]);
         $this->mockComponent([
-            'languages' => ['de', 'at'=>'de-AT'],
+            'languages' => ['de', 'at' => 'de-AT'],
         ]);
     }
 
     public function testRedirectsIfNoLanguageInUrlAndAcceptedLanguageMatchesLanguageAndCountryAlias()
     {
         $this->expectRedirect('/de/site/page');
-        $this->mockRequest('/site/page',[
+        $this->mockRequest('/site/page', [
             'acceptableLanguages' => ['en-US', 'en', 'de'],
         ]);
         $this->mockComponent([
-            'languages' => ['de', 'at'=>'de-AT'],
+            'languages' => ['de', 'at' => 'de-AT'],
         ]);
     }
 
     public function testRedirectsIfNoLanguageInUrlAndAcceptedLanguageWithLowercaseCountryMatches()
     {
         $this->expectRedirect('/de-at/site/page');
-        $this->mockRequest('/site/page',[
+        $this->mockRequest('/site/page', [
             'acceptableLanguages' => ['de-at', 'de', 'en'],
         ]);
         $this->mockComponent([
@@ -210,7 +210,7 @@ class UrlManagerTest extends TestCase
     public function testRedirectsIfNoLanguageInUrlAndAcceptedLanguageWithCountryMatchesLanguage()
     {
         $this->expectRedirect('/de/site/page');
-        $this->mockRequest('/site/page',[
+        $this->mockRequest('/site/page', [
             'acceptableLanguages' => ['de-at'],
         ]);
         $this->mockComponent([
@@ -224,7 +224,7 @@ class UrlManagerTest extends TestCase
         @session_start();
         $_SESSION['_language'] = 'de';
         $this->mockRequest('/site/page');
-        $this->mockComponent( [
+        $this->mockComponent([
             'languages' => ['en-US', 'en', 'de'],
         ]);
     }
@@ -235,7 +235,7 @@ class UrlManagerTest extends TestCase
         @session_start();
         $_SESSION['_language'] = 'de';
         $this->mockRequest('/site/page');
-        $this->mockComponent( [
+        $this->mockComponent([
             'languages' => ['en-US', 'en', 'de-*'],
         ]);
     }
@@ -245,7 +245,7 @@ class UrlManagerTest extends TestCase
         $this->expectRedirect('/de/site/page');
         $_COOKIE['_language'] = 'de';
         $this->mockRequest('/site/page');
-        $this->mockComponent( [
+        $this->mockComponent([
             'languages' => ['en-US', 'en', 'de'],
         ]);
     }
@@ -255,7 +255,7 @@ class UrlManagerTest extends TestCase
         $this->expectRedirect('/de/site/page');
         $_COOKIE['_language'] = 'de';
         $this->mockRequest('/site/page');
-        $this->mockComponent( [
+        $this->mockComponent([
             'languages' => ['en-US', 'en', 'de-*'],
         ]);
     }
@@ -265,21 +265,21 @@ class UrlManagerTest extends TestCase
         $this->expectRedirect('/site/page');
         $this->mockRequest('/en/site/page');
         $this->mockComponent([
-            'languages' => ['en-US', 'en', 'de'],
+            'languages'                 => ['en-US', 'en', 'de'],
             'ignoreLanguageUrlPatterns' => [
-                '#not/used#' => '#^site/other#'
+                '#not/used#' => '#^site/other#',
             ],
         ]);
     }
 
     public function testDoesNothingIfLocaleUrlsDisabled()
     {
-        $this->mockRequest('/site/page',[
+        $this->mockRequest('/site/page', [
             'acceptableLanguages' => ['de'],
         ]);
         $this->mockComponent([
             'enableLocaleUrls' => false,
-            'languages' => ['en-US', 'en', 'de'],
+            'languages'        => ['en-US', 'en', 'de'],
         ]);
         $this->assertEquals('en', Yii::$app->language);
         $request = Yii::$app->request;
@@ -288,7 +288,7 @@ class UrlManagerTest extends TestCase
 
     public function testDoesNothingIfNoLanguagesConfigured()
     {
-        $this->mockRequest('/site/page',[
+        $this->mockRequest('/site/page', [
             'acceptableLanguages' => ['de'],
         ]);
         $this->mockComponent([
@@ -301,13 +301,13 @@ class UrlManagerTest extends TestCase
 
     public function testDoesNothingIfUrlMatchesIgnoresUrls()
     {
-        $this->mockRequest('/site/page',[
+        $this->mockRequest('/site/page', [
             'acceptableLanguages' => ['de'],
         ]);
         $this->mockComponent([
-            'languages' => ['en-US', 'en', 'de'],
+            'languages'                 => ['en-US', 'en', 'de'],
             'ignoreLanguageUrlPatterns' => [
-                '#not/used#' => '#^site/page#'
+                '#not/used#' => '#^site/page#',
             ],
         ]);
         $this->assertEquals('en', Yii::$app->language);
@@ -319,7 +319,7 @@ class UrlManagerTest extends TestCase
     {
         $_COOKIE['_language'] = 'fr';
         $this->mockRequest('/site/page');
-        $this->mockComponent( [
+        $this->mockComponent([
             'languages' => ['en-US', 'en', 'de'],
         ]);
     }
@@ -329,18 +329,18 @@ class UrlManagerTest extends TestCase
         @session_start();
         $_SESSION['_language'] = 'fr';
         $this->mockRequest('/site/page');
-        $this->mockComponent( [
+        $this->mockComponent([
             'languages' => ['en-US', 'en', 'de'],
         ]);
     }
 
     public function testCanDisableLanguageDetection()
     {
-        $this->mockRequest('/site/page',[
+        $this->mockRequest('/site/page', [
             'acceptableLanguages' => ['de'],
         ]);
         $this->mockComponent([
-            'languages' => ['en-US', 'en', 'de'],
+            'languages'               => ['en-US', 'en', 'de'],
             'enableLanguageDetection' => false,
         ]);
         $this->assertEquals('en', Yii::$app->language);
@@ -352,7 +352,7 @@ class UrlManagerTest extends TestCase
     {
         $this->mockRequest('/en-us/site/page');
         $this->mockComponent([
-            'languages' => ['en-US', 'en', 'de'],
+            'languages'                 => ['en-US', 'en', 'de'],
             'enableLanguagePersistence' => false,
         ]);
         $this->assertEquals('en-US', Yii::$app->language);
@@ -366,7 +366,7 @@ class UrlManagerTest extends TestCase
     {
         $this->mockRequest('/en-us/site/page');
         $this->mockComponent([
-            'languages' => ['en-US', 'en', 'de'],
+            'languages'              => ['en-US', 'en', 'de'],
             'languageCookieDuration' => false,
         ]);
         $this->assertEquals('en-US', Yii::$app->language);
@@ -381,7 +381,7 @@ class UrlManagerTest extends TestCase
         $this->mockRequest('/site/page');
         $this->mockComponent([
             'enableLocaleUrls' => false,
-            'languages' => ['en-US', 'en', 'de'],
+            'languages'        => ['en-US', 'en', 'de'],
         ]);
         $this->assertEquals($this->prepareUrl('/demo/action?language=de'), Url::to(['/demo/action', 'language' => 'de']));
     }
@@ -418,7 +418,7 @@ class UrlManagerTest extends TestCase
         $this->mockRequest('/de/site/page');
         $this->mockComponent([
             'languages' => ['en-US', 'en', 'de'],
-            'rules' => [
+            'rules'     => [
                 '' => 'site/index',
             ],
         ]);
@@ -447,9 +447,9 @@ class UrlManagerTest extends TestCase
     {
         $this->mockRequest('/de/site/page');
         $this->mockComponent([
-            'languages' => ['en-us', 'en', 'de'],
+            'languages'                 => ['en-us', 'en', 'de'],
             'ignoreLanguageUrlPatterns' => [
-                '#^demo/.*#' => '#not/used#'
+                '#^demo/.*#' => '#not/used#',
             ],
         ]);
         $this->assertEquals($this->prepareUrl('/demo/action'), Url::to(['/demo/action']));
@@ -459,9 +459,9 @@ class UrlManagerTest extends TestCase
     {
         $this->mockRequest('/de/site/page');
         $this->mockComponent([
-            'languages' => ['en-us', 'en', 'de'],
+            'languages'                 => ['en-us', 'en', 'de'],
             'ignoreLanguageUrlPatterns' => [
-                '#^other/.*#' => '#not/used#'
+                '#^other/.*#' => '#not/used#',
             ],
         ]);
         $this->assertEquals($this->prepareUrl('/de/demo/action'), Url::to(['/demo/action']));
