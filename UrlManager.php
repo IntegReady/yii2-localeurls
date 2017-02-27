@@ -1,9 +1,13 @@
 <?php
-namespace meshzp\localeurls;
+
+namespace integready\localeurls;
 
 use Yii;
+use yii\base\Exception;
 use yii\base\InvalidConfigException;
+use yii\helpers\Url;
 use yii\web\Cookie;
+use yii\web\NotFoundHttpException;
 use yii\web\UrlManager as BaseUrlManager;
 
 /**
@@ -12,6 +16,8 @@ use yii\web\UrlManager as BaseUrlManager;
  * This class extends Yii's UrlManager and adds features to detect the language from the URL
  * or from browser settings transparently. It also can persist the language in the user session
  * and optionally in a cookie. It also adds the language parameter to any created URL.
+ *
+ * @property string $defaultLanguage
  */
 class UrlManager extends BaseUrlManager
 {
@@ -91,29 +97,24 @@ class UrlManager extends BaseUrlManager
      * ~~~
      */
     public $ignoreLanguageUrlPatterns = [];
-
-    /**
-     * @var string the language that was initially set in the application configuration
-     */
-    protected $_defaultLanguage;
-
     /**
      * @inheritdoc
      */
     public $enablePrettyUrl = true;
-
     /**
      * @var string if a parameter with this name is passed to any `createUrl()` method, the created URL
      * will use the language specified there. URLs created this way can be used to switch to a different
      * language. If no such parameter is used, the currently detected application language is used.
      */
     public $languageParam = 'language';
-
     /**
      * @var string We should translate languages labels translations could be stored with custom translation category
      */
     public $translateCategory;
-
+    /**
+     * @var string the language that was initially set in the application configuration
+     */
+    protected $_defaultLanguage;
     /**
      * @var \yii\web\Request
      */
@@ -135,16 +136,8 @@ class UrlManager extends BaseUrlManager
             }
         }
         $this->_defaultLanguage = Yii::$app->language;
-        return parent::init();
-    }
 
-    /**
-     * @return string the `language` option that was initially set in the application config file,
-     * before it was modified by this component.
-     */
-    public function getDefaultLanguage()
-    {
-        return $this->_defaultLanguage;
+        return parent::init();
     }
 
     /**
@@ -157,7 +150,7 @@ class UrlManager extends BaseUrlManager
             if ($this->ignoreLanguageUrlPatterns) {
                 $pathInfo = $request->getPathInfo();
                 foreach ($this->ignoreLanguageUrlPatterns as $k => $pattern) {
-                    if (preg_match($pattern.'i', $pathInfo)) {
+                    if (preg_match($pattern . 'i', $pathInfo)) {
                         Yii::trace("Ignore pattern '$pattern' matches '$pathInfo.' Skipping language processing.", __METHOD__);
                         $process = false;
                     }
@@ -168,67 +161,8 @@ class UrlManager extends BaseUrlManager
                 $this->processLocaleUrl($request);
             }
         }
+
         return parent::parseRequest($request);
-    }
-
-    /**
-     * @inheritdoc
-     */
-    public function createUrl($params)
-    {
-//        if ($this->_request->isPost)
-//            return parent::createUrl($params);
-
-        if ($this->ignoreLanguageUrlPatterns) {
-            $params = (array) $params;
-            $route = trim($params[0], '/');
-            foreach ($this->ignoreLanguageUrlPatterns as $pattern => $v) {
-                if (preg_match($pattern.'i', $route)) {
-                    return parent::createUrl($params);
-                }
-            }
-        }
-
-        if ($this->enableLocaleUrls && $this->languages) {
-            $params = (array) $params;
-
-            if (isset($params[$this->languageParam])) {
-                $language = $params[$this->languageParam];
-                unset($params[$this->languageParam]);
-                $languageRequired = true;
-            } else {
-                $language = Yii::$app->language;
-                $languageRequired = false;
-            }
-
-            $url = parent::createUrl($params);
-
-            // Unless a language was explicitely specified in the parameters we can return a URL without any prefix
-            // for the default language, if suffixes are disabled for the default language. In any other case we
-            // always add the suffix, e.g. to create "reset" URLs that explicitely contain the default language.
-            if (!$languageRequired && !$this->enableDefaultLanguageUrlCode && $language===$this->getDefaultLanguage()) {
-                return  $url;
-            } else {
-                $url = rtrim($url, '/');
-                $key = array_search($language, $this->languages);
-                $base = $this->showScriptName ? $this->getScriptUrl() : $this->getBaseUrl();
-                $length = strlen($base);
-                if (is_string($key)) {
-                    $language = $key;
-                }
-                return $length ? substr_replace($url, "$base/$language", 0, $length) : "/$language$url";
-            }
-        } else {
-            return parent::createUrl($params);
-        }
-    }
-
-    public function createAbsoluteUrl($params, $scheme = null)
-    {
-        if ((Yii::$app->language != Yii::$app->sourceLanguage)) {
-            $params += ['language' => Yii::$app->language];
-        }
-        return parent::createAbsoluteUrl($params, $scheme);
     }
 
     /**
@@ -241,12 +175,12 @@ class UrlManager extends BaseUrlManager
     protected function processLocaleUrl($request)
     {
         $this->_request = $request;
-        $pathInfo = $request->getPathInfo();
-        $parts = [];
+        $pathInfo       = $request->getPathInfo();
+        $parts          = [];
         foreach ($this->languages as $k => $v) {
             $value = is_string($k) ? $k : $v;
-            if (substr($value, -2)==='-*') {
-                $lng = substr($value, 0, -2);
+            if (substr($value, -2) === '-*') {
+                $lng     = substr($value, 0, -2);
                 $parts[] = "$lng\-[a-z]{2,3}";
                 $parts[] = $lng;
             } else {
@@ -255,24 +189,24 @@ class UrlManager extends BaseUrlManager
         }
         $pattern = implode('|', $parts);
         if (preg_match("#^($pattern)\b(/?)#i", $pathInfo, $m)) {
-            $request->setPathInfo(mb_substr($pathInfo, mb_strlen($m[1].$m[2])));
-            $code = explode("-", $m[1]);
-            $code = implode("-", [mb_strtolower($code[0]), mb_strtoupper($code[1])]);
+            $request->setPathInfo(mb_substr($pathInfo, mb_strlen($m[1] . $m[2])));
+            $code = explode('-', $m[1]);
+            $code = implode('-', [mb_strtolower($code[0]), mb_strtoupper($code[1])]);
             if (isset($this->languages[$code])) {
                 // Replace alias with language code
                 $language = $this->languages[$code];
             } elseif (in_array($code, $this->languages)) {
                 $language = $code;
             } else {
-                list($language,$country) = $this->matchCode($code);
-                if ($country!==null) {
-                    if ($code==="$language-$country") {
+                list($language, $country) = $this->matchCode($code);
+                if ($country !== null) {
+                    if ($code === "$language-$country") {
                         $this->redirectToLanguage($code);
                     } else {
                         $language = "$language-$country";
                     }
                 }
-                if ($language===null) {
+                if ($language === null) {
                     $language = $code;
                 }
             }
@@ -283,58 +217,58 @@ class UrlManager extends BaseUrlManager
                 Yii::trace("Persisting language '$language' in session.", __METHOD__);
             }
             if ($this->languageCookieDuration) {
-                $cookie = new Cookie([
+                $cookie         = new Cookie([
                     'name'     => $this->languageCookieName,
                     'httpOnly' => true,
                     'domain'   => is_null($this->languageCookieDomain) ? Yii::$app->request->serverName : $this->languageCookieDomain,
                 ]);
-                $cookie->value = $language;
+                $cookie->value  = $language;
                 $cookie->expire = time() + (int)$this->languageCookieDuration;
                 Yii::$app->getResponse()->getCookies()->add($cookie);
                 Yii::trace("Persisting language '$language' in cookie.", __METHOD__);
             }
 
-
             // "Reset" case: We called e.g. /fr/demo/page so the persisted language was set back to "fr".
             // Now we can redirect to the URL without language prefix, if default prefixes are disabled.
-            if (!$this->enableDefaultLanguageUrlCode && $language===$this->_defaultLanguage) {
+            if (!$this->enableDefaultLanguageUrlCode && $language === $this->_defaultLanguage) {
                 $this->redirectToLanguage('');
             }
         } else {
             $language = null;
             if ($this->enableLanguagePersistence) {
                 $language = Yii::$app->session->get($this->languageSessionKey);
-                $language!==null && Yii::trace("Found persisted language '$language' in session.", __METHOD__);
+                $language !== null && Yii::trace("Found persisted language '$language' in session.", __METHOD__);
             }
-            if ($this->languageCookieDuration && $language===null) {
+            if ($this->languageCookieDuration && $language === null) {
                 $language = $request->getCookies()->getValue($this->languageCookieName);
-                $language!==null && Yii::trace("Found persisted language '$language' in cookie.", __METHOD__);
+                $language !== null && Yii::trace("Found persisted language '$language' in cookie.", __METHOD__);
             }
-            if ($language===null && $this->enableLanguageDetection) {
+            if ($language === null && $this->enableLanguageDetection) {
                 foreach ($request->getAcceptableLanguages() as $acceptable) {
-                    if ($acceptable == "ru") {
-                        $acceptable = "ru-RU";
+                    if ($acceptable == 'ru') {
+                        $acceptable = 'ru-RU';
                     }
-                    if ($acceptable == "en") {
-                        $acceptable = "en-US";
+                    if ($acceptable == 'en') {
+                        $acceptable = 'en-US';
                     }
-                    if ($acceptable == "fr") {
-                        $acceptable = "fr-FR";
+                    if ($acceptable == 'fr') {
+                        $acceptable = 'fr-FR';
                     }
-                    if ($acceptable == "zh") {
-                        $acceptable = "zh-CN";
+                    if ($acceptable == 'zh') {
+                        $acceptable = 'zh-CN';
                     }
-                    list($language,$country) = $this->matchCode($acceptable);
-                    if ($language!==null) {
-                        $language = $country===null ? $language : "$language-$country";
+                    list($language, $country) = $this->matchCode($acceptable);
+                    if ($language !== null) {
+                        $language = $country === null ? $language : "$language-$country";
                         Yii::trace("Detected browser language '$language'.", __METHOD__);
                         break;
                     }
                 }
             }
-            if ($language===null || $language===$this->_defaultLanguage) {
+            if ($language === null || $language === $this->_defaultLanguage) {
                 if (!$this->enableDefaultLanguageUrlCode) {
                     Yii::$app->language = $this->_defaultLanguage;
+
                     return;
                 } else {
                     $language = $this->_defaultLanguage;
@@ -342,7 +276,7 @@ class UrlManager extends BaseUrlManager
             }
 
             Yii::$app->language = $language;
-            if ($this->matchCode($language)===[null, null] || $this->_request->isAjax) {
+            if ($this->matchCode($language) === [null, null] || $this->_request->isAjax) {
                 return;
             }
 
@@ -373,22 +307,22 @@ class UrlManager extends BaseUrlManager
      * a configured language, that language is returned.
      *
      * @param string $code the code to match
+     *
      * @return array of [language, country] where both can be null if no match
      */
     protected function matchCode($code)
     {
         $language = $code;
-        $country = null;
-        $parts = explode('-', $code);
-        if (count($parts)===2) {
+        $country  = null;
+        $parts    = explode('-', $code);
+        if (count($parts) === 2) {
             $language = $parts[0];
-            $country = strtoupper($parts[1]);
+            $country  = strtoupper($parts[1]);
         }
 
         if (in_array($code, $this->languages)) {
             return [$language, $country];
-        } elseif (
-            $country && in_array("$language-$country", $this->languages) ||
+        } elseif ($country && in_array("$language-$country", $this->languages) ||
             in_array("$language-*", $this->languages)
         ) {
             return [$language, $country];
@@ -403,16 +337,17 @@ class UrlManager extends BaseUrlManager
      * Redirect to the current URL with given language code applied
      *
      * @param string $language the language code to add. Can also be empty to not add any language code.
+     *
      * @throws \yii\base\Exception
      */
     protected function redirectToLanguage($language)
     {
         $result = parent::parseRequest($this->_request);
         if ($result === false) {
-            throw new \yii\web\NotFoundHttpException(Yii::t('yii', 'Page not found.'));
+            throw new NotFoundHttpException(Yii::t('yii', 'Page not found.'));
         }
         list ($route, $params) = $result;
-        if($language){
+        if ($language) {
             $params[$this->languageParam] = $language;
         }
         // See Yii Issues #8291 and #9161:
@@ -424,10 +359,86 @@ class UrlManager extends BaseUrlManager
         if (YII_ENV_TEST) {
             // Response::redirect($url) above will call `Url::to()` internally. So to really
             // test for the same final redirect URL here, we need to call Url::to(), too.
-            throw new \yii\base\Exception(\yii\helpers\Url::to($url));
+            throw new Exception(Url::to($url));
         } else {
             Yii::$app->end();
         }
+    }
 
+    /**
+     * @inheritdoc
+     */
+    public function createUrl($params)
+    {
+//        if ($this->_request->isPost)
+//            return parent::createUrl($params);
+
+        if ($this->ignoreLanguageUrlPatterns) {
+            $params = (array)$params;
+            $route  = trim($params[0], '/');
+            foreach ($this->ignoreLanguageUrlPatterns as $pattern => $v) {
+                if (preg_match($pattern . 'i', $route)) {
+                    return parent::createUrl($params);
+                }
+            }
+        }
+
+        if ($this->enableLocaleUrls && $this->languages) {
+            $params = (array)$params;
+
+            if (isset($params[$this->languageParam])) {
+                $language = $params[$this->languageParam];
+                unset($params[$this->languageParam]);
+                $languageRequired = true;
+            } else {
+                $language         = Yii::$app->language;
+                $languageRequired = false;
+            }
+
+            $url = parent::createUrl($params);
+
+            // Unless a language was explicitely specified in the parameters we can return a URL without any prefix
+            // for the default language, if suffixes are disabled for the default language. In any other case we
+            // always add the suffix, e.g. to create "reset" URLs that explicitely contain the default language.
+            if (!$languageRequired && !$this->enableDefaultLanguageUrlCode && $language === $this->getDefaultLanguage()) {
+                return $url;
+            } else {
+                $url    = rtrim($url, '/');
+                $key    = array_search($language, $this->languages);
+                $base   = $this->showScriptName ? $this->getScriptUrl() : $this->getBaseUrl();
+                $length = strlen($base);
+                if (is_string($key)) {
+                    $language = $key;
+                }
+
+                return $length ? substr_replace($url, "$base/$language", 0, $length) : "/$language$url";
+            }
+        } else {
+            return parent::createUrl($params);
+        }
+    }
+
+    /**
+     * @return string the `language` option that was initially set in the application config file,
+     * before it was modified by this component.
+     */
+    public function getDefaultLanguage()
+    {
+        return $this->_defaultLanguage;
+    }
+
+    /**
+     * @param array|string $params
+     * @param string|null $scheme
+     *
+     * @return string
+     */
+    public function createAbsoluteUrl($params, $scheme = null)
+    {
+        if ((Yii::$app->language != Yii::$app->sourceLanguage)) {
+            $params += ['language' => Yii::$app->language];
+        }
+
+        return parent::createAbsoluteUrl($params, $scheme);
     }
 }
