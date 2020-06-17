@@ -400,7 +400,7 @@ class UrlManager extends BaseUrlManager
             // Unless a language was explicitely specified in the parameters we can return a URL without any prefix
             // for the default language, if suffixes are disabled for the default language. In any other case we
             // always add the suffix, e.g. to create "reset" URLs that explicitely contain the default language.
-            if (!$languageRequired && !$this->enableDefaultLanguageUrlCode && $language === $this->getDefaultLanguage()) {
+            if ((!$languageRequired && !$this->enableDefaultLanguageUrlCode && $language === $this->getDefaultLanguage()) || strpos($params[0], "{$language}/") === 0) {
                 return $url;
             } else {
                 $url    = rtrim($url, '/');
